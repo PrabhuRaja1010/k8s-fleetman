@@ -1,0 +1,42 @@
+pipeline{
+    agent any
+    stages {
+        stage('git') {
+           steps {
+               git changelog: false, poll: false, url: 'https://github.com/PrabhuRaja1010/k8s-fleetman.git'
+           }
+        }   
+        stage('build') {
+          steps {
+              sh '''
+                  cd k8s-fleetman-position-simulator
+                  mvn clean package
+                 '''
+               }
+            }
+        stage('deploytonexus'){
+           steps {
+               def mavenPom = readMavenPom 'pom.xml'
+               nexusArtifactUploader artifacts: [
+                   [
+                       artifactId: 'positionreceiver', 
+                       classifier: '', 
+                       file: "k8s-fleetman-position-simulator/target/positionsimulator-${mavenPom.version}.jar", 
+                       type: 'jar'
+                       ]
+                    ],
+                        credentialsId: 'NEXUS_ID', 
+                        groupId: 'com.virtualpairprogrammers', 
+                        nexusUrl: '35.223.105.209:8081', 
+                        nexusVersion: 'nexus3', 
+                        protocol: 'http', 
+                        repository: 'maven-releases', 
+                        version: "${mavenPom.version}"
+              }
+                
+           }
+        } 
+          
+          
+   }  
+    
